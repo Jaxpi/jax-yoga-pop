@@ -192,4 +192,148 @@ window.onload = function () {
     animationtime = 0;
   }
 
+  function stateShootBubble(dt) {
+    player.bubble.x +=
+      dt * player.bubble.speed * Math.cos(degToRad(player.bubble.angle));
+    player.bubble.y +=
+      dt * player.bubble.speed * -1 * Math.sin(degToRad(player.bubble.angle));
+
+    if (player.bubble.x <= level.x) {
+      player.bubble.angle = 180 - player.bubble.angle;
+      player.bubble.x = level.x;
+    } else if (player.bubble.x + level.tilewidth >= level.x + level.width) {
+      player.bubble.angle = 180 - player.bubble.angle;
+      player.bubble.x = level.x + level.width - level.tilewidth;
+    }
+
+    if (player.bubble.y <= level.y) {
+      player.bubble.y = level.y;
+      snapBubble();
+      return;
+    }
+
+    for (var i = 0; i < level.columns; i++) {
+      for (var j = 0; j < level.rows; j++) {
+        var tile = level.tiles[i][j];
+
+        if (tile.type < 0) {
+          continue;
+        }
+
+        var coord = getTileCoordinate(i, j);
+        if (
+          circleIntersection(
+            player.bubble.x + level.tilewidth / 2,
+            player.bubble.y + level.tileheight / 2,
+            level.radius,
+            coord.tilex + level.tilewidth / 2,
+            coord.tiley + level.tileheight / 2,
+            level.radius
+          )
+        ) {
+          snapBubble();
+          return;
+        }
+      }
+    }
+  }
+
+  function stateRemoveCluster(dt) {
+    if (animationstate == 0) {
+      resetRemoved();
+
+      for (var i = 0; i < cluster.length; i++) {
+        cluster[i].removed = true;
+      }
+
+      score += cluster.length * 100;
+
+      floatingclusters = findFloatingClusters();
+
+      if (floatingclusters.length > 0) {
+        for (var i = 0; i < floatingclusters.length; i++) {
+          for (var j = 0; j < floatingclusters[i].length; j++) {
+            var tile = floatingclusters[i][j];
+            tile.shift = 0;
+            tile.shift = 1;
+            tile.velocity = player.bubble.dropspeed;
+
+            score += 100;
+          }
+        }
+      }
+
+      animationstate = 1;
+    }
+
+    if (animationstate == 1) {
+      var tilesleft = false;
+      for (var i = 0; i < cluster.length; i++) {
+        var tile = cluster[i];
+
+        if (tile.type >= 0) {
+          tilesleft = true;
+
+          tile.alpha -= dt * 15;
+          if (tile.alpha < 0) {
+            tile.alpha = 0;
+          }
+
+          if (tile.alpha == 0) {
+            tile.type = -1;
+            tile.alpha = 1;
+          }
+        }
+      }
+
+      for (var i = 0; i < floatingclusters.length; i++) {
+        for (var j = 0; j < floatingclusters[i].length; j++) {
+          var tile = floatingclusters[i][j];
+
+          if (tile.type >= 0) {
+            tilesleft = true;
+
+            tile.velocity += dt * 700;
+            tile.shift += dt * tile.velocity;
+
+            tile.alpha -= dt * 8;
+            if (tile.alpha < 0) {
+              tile.alpha = 0;
+            }
+
+            if (
+              tile.alpha == 0 ||
+              tile.y * level.rowheight + tile.shift >
+                (level.rows - 1) * level.rowheight + level.tileheight
+            ) {
+              tile.type = -1;
+              tile.shift = 0;
+              tile.alpha = 1;
+            }
+          }
+        }
+      }
+
+      if (!tilesleft) {
+        nextBubble();
+
+        var tilefound = false;
+        for (var i = 0; i < level.columns; i++) {
+          for (var j = 0; j < level.rows; j++) {
+            if (level.tiles[i][j].type != -1) {
+              tilefound = true;
+              break;
+            }
+          }
+        }
+
+        if (tilefound) {
+          setGameState(gamestates.ready);
+        } else {
+          setGameState(gamestates.gameover);
+        }
+      }
+    }
+  }
+
 };
