@@ -559,4 +559,192 @@ window.onload = function () {
     context.fillText(text, x + (width - textdim.width) / 2, y);
   }
 
+   // RENDER THE GAMEBOARD
+  function render() {
+    drawFrame();
+
+    var yoffset = level.tileheight / 2;
+
+    context.fillStyle = "#8c8c8c";
+    context.fillRect(
+      level.x - 4,
+      level.y - 4,
+      level.width + 8,
+      level.height + 4 - yoffset
+    );
+
+    renderTiles();
+
+    context.fillStyle = "#656565";
+    context.fillRect(
+      level.x - 4,
+      level.y - 4 + level.height + 4 - yoffset,
+      level.width + 8,
+      2 * level.tileheight + 3
+    );
+
+    context.fillStyle = "#ffffff";
+    context.font = "18px Verdana";
+    var scorex = level.x + level.width - 150;
+    var scorey = level.y + level.height + level.tileheight - yoffset - 8;
+    drawCenterText("Score:", scorex, scorey, 150);
+    context.font = "24px Verdana";
+    drawCenterText(score, scorex, scorey + 30, 150);
+
+    if (showcluster) {
+      renderCluster(cluster, 255, 128, 128);
+
+      for (var i = 0; i < floatingclusters.length; i++) {
+        var col = Math.floor(100 + (100 * i) / floatingclusters.length);
+        renderCluster(floatingclusters[i], col, col, col);
+      }
+    }
+
+    renderPlayer();
+
+    if (gamestate == gamestates.gameover) {
+      context.fillStyle = "rgba(0, 0, 0, 0.8)";
+      context.fillRect(
+        level.x - 4,
+        level.y - 4,
+        level.width + 8,
+        level.height + 2 * level.tileheight + 8 - yoffset
+      );
+
+      context.fillStyle = "#ffffff";
+      context.font = "24px Verdana";
+      drawCenterText(
+        "Game Over!",
+        level.x,
+        level.y + level.height / 2 + 10,
+        level.width
+      );
+      drawCenterText(
+        "Click to start",
+        level.x,
+        level.y + level.height / 2 + 40,
+        level.width
+      );
+    }
+  }
+
+  // CREATE GAMEBOARD AND BUBBLES
+  function drawFrame() {
+    context.fillStyle = "#e8eaec";
+    context.fillRect(0, 0, canvas.width, canvas.height);
+
+    context.fillStyle = "#303030";
+    context.fillRect(0, 0, canvas.width, 79);
+
+    context.fillStyle = "#ffffff";
+    context.font = "24px Verdana";
+    context.fillText("Jax Yoga Pop", 25, 45);
+  }
+
+  function renderTiles() {
+    for (var j = 0; j < level.rows; j++) {
+      for (var i = 0; i < level.columns; i++) {
+        var tile = level.tiles[i][j];
+        var shift = tile.shift;
+        var coord = getTileCoordinate(i, j);
+
+        if (tile.type >= 0) {
+          context.save();
+          context.globalAlpha = tile.alpha;
+
+          drawBubble(coord.tilex, coord.tiley + shift, tile.type);
+
+          context.restore();
+        }
+      }
+    }
+  }
+
+  function renderCluster(cluster, r, g, b) {
+    for (var i = 0; i < cluster.length; i++) {
+      var coord = getTileCoordinate(cluster[i].x, cluster[i].y);
+
+      context.fillStyle = "rgb(" + r + "," + g + "," + b + ")";
+      context.fillRect(
+        coord.tilex + level.tilewidth / 4,
+        coord.tiley + level.tileheight / 4,
+        level.tilewidth / 2,
+        level.tileheight / 2
+      );
+    }
+  }
+
+  function renderPlayer() {
+    var centerx = player.x + level.tilewidth / 2;
+    var centery = player.y + level.tileheight / 2;
+
+    context.fillStyle = "#7a7a7a";
+    context.beginPath();
+    context.arc(centerx, centery, level.radius + 12, 0, 2 * Math.PI, false);
+    context.fill();
+    context.lineWidth = 2;
+    context.strokeStyle = "#8c8c8c";
+    context.stroke();
+
+    context.lineWidth = 2;
+    context.strokeStyle = "white";
+    context.beginPath();
+    context.moveTo(centerx, centery);
+    context.lineTo(
+      centerx + 2.5 * level.tilewidth * Math.cos(degToRad(player.angle)),
+      centery - 1.5 * level.tileheight * Math.sin(degToRad(player.angle))
+    );
+    context.stroke();
+
+    drawBubble(
+      player.nextbubble.x,
+      player.nextbubble.y,
+      player.nextbubble.tiletype
+    );
+
+    if (player.bubble.visible) {
+      drawBubble(player.bubble.x, player.bubble.y, player.bubble.tiletype);
+    }
+  }
+
+  function getTileCoordinate(column, row) {
+    var tilex = level.x + column * level.tilewidth;
+
+    if ((row + rowoffset) % 2) {
+      tilex += level.tilewidth / 2;
+    }
+
+    var tiley = level.y + row * level.rowheight;
+    return { tilex: tilex, tiley: tiley };
+  }
+
+  function getGridPosition(x, y) {
+    var gridy = Math.floor((y - level.y) / level.rowheight);
+
+    var xoffset = 0;
+    if ((gridy + rowoffset) % 2) {
+      xoffset = level.tilewidth / 2;
+    }
+    var gridx = Math.floor((x - xoffset - level.x) / level.tilewidth);
+
+    return { x: gridx, y: gridy };
+  }
+
+  function drawBubble(x, y, index) {
+    if (index < 0 || index >= bubblecolors) return;
+
+    context.drawImage(
+      bubbleimage,
+      index * 40,
+      0,
+      40,
+      40,
+      x,
+      y,
+      level.tilewidth,
+      level.tileheight
+    );
+  }
+
+
 };
