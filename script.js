@@ -111,4 +111,31 @@ window.onload = function () {
     return loadedimages;
   }
 
+  // GAME INITIALIZATION FUNCTION
+  function init() {
+    images = loadImages(["./assets/imgArrYoga.png"]);
+    bubbleimage = images[0];
+
+    canvas.addEventListener("mousemove", onMouseMove);
+    canvas.addEventListener("mousedown", onMouseDown);
+
+    for (var i = 0; i < level.columns; i++) {
+      level.tiles[i] = [];
+      for (var j = 0; j < level.rows; j++) {
+        level.tiles[i][j] = new Tile(i, j, 0, 0);
+      }
+    }
+    level.width = level.columns * level.tilewidth + level.tilewidth / 2;
+    level.height = (level.rows - 1) * level.rowheight + level.tileheight;
+
+    player.x = level.x + level.width / 2 - level.tilewidth / 2;
+    player.y = level.y + level.height;
+    player.angle = 90;
+    player.tiletype = 0;
+    player.nextbubble.x = player.x - 2 * level.tilewidth;
+    player.nextbubble.y = player.y;
+
+    newGame();
+    main(0);
+  }
 };
