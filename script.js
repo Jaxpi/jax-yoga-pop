@@ -139,7 +139,7 @@ window.onload = function () {
     main(0);
   }
 
-   function main(tframe) {
+  function main(tframe) {
     window.requestAnimationFrame(main);
 
     if (!initialized) {
@@ -559,7 +559,7 @@ window.onload = function () {
     context.fillText(text, x + (width - textdim.width) / 2, y);
   }
 
-   // RENDER THE GAMEBOARD
+  // RENDER THE GAMEBOARD
   function render() {
     drawFrame();
 
@@ -745,7 +745,8 @@ window.onload = function () {
       level.tileheight
     );
   }
-// NEW GAME
+
+  // NEW GAME
   function newGame() {
     score = 0;
     turncounter = 0;
@@ -892,5 +893,4 @@ window.onload = function () {
 
   // CALL TO INITIALIZE
   init();
-
 };
