@@ -138,4 +138,58 @@ window.onload = function () {
     newGame();
     main(0);
   }
+
+   function main(tframe) {
+    window.requestAnimationFrame(main);
+
+    if (!initialized) {
+      context.clearRect(0, 0, canvas.width, canvas.height);
+      drawFrame();
+
+      var loadpercentage = loadcount / loadtotal;
+      context.strokeStyle = "#ff8080";
+      context.lineWidth = 3;
+      context.strokeRect(18.5, 0.5 + canvas.height - 51, canvas.width - 37, 32);
+      context.fillStyle = "#ff8080";
+      context.fillRect(
+        18.5,
+        0.5 + canvas.height - 51,
+        loadpercentage * (canvas.width - 37),
+        32
+      );
+
+      var loadtext = "Loaded " + loadcount + "/" + loadtotal + " images";
+      context.fillStyle = "#000000";
+      context.font = "16px Verdana";
+      context.fillText(loadtext, 18, 0.5 + canvas.height - 63);
+
+      if (preloaded) {
+        setTimeout(function () {
+          initialized = true;
+        }, 1000);
+      }
+    } else {
+      update(tframe);
+      render();
+    }
+  }
+
+  function update(tframe) {
+    var dt = (tframe - lastframe) / 1000;
+    lastframe = tframe;
+
+    if (gamestate == gamestates.ready) {
+    } else if (gamestate == gamestates.shootbubble) {
+      stateShootBubble(dt);
+    } else if (gamestate == gamestates.removecluster) {
+      stateRemoveCluster(dt);
+    }
+  }
+
+  function setGameState(newgamestate) {
+    gamestate = newgamestate;
+    animationstate = 0;
+    animationtime = 0;
+  }
+
 };
