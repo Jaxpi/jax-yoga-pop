@@ -336,4 +336,227 @@ window.onload = function () {
     }
   }
 
+  function snapBubble() {
+    var centerx = player.bubble.x + level.tilewidth / 2;
+    var centery = player.bubble.y + level.tileheight / 2;
+    var gridpos = getGridPosition(centerx, centery);
+
+    if (gridpos.x < 0) {
+      gridpos.x = 0;
+    }
+
+    if (gridpos.x >= level.columns) {
+      gridpos.x = level.columns - 1;
+    }
+
+    if (gridpos.y < 0) {
+      gridpos.y = 0;
+    }
+
+    if (gridpos.y >= level.rows) {
+      gridpos.y = level.rows - 1;
+    }
+
+    var addtile = false;
+    if (level.tiles[gridpos.x][gridpos.y].type != -1) {
+      for (var newrow = gridpos.y + 1; newrow < level.rows; newrow++) {
+        if (level.tiles[gridpos.x][newrow].type == -1) {
+          gridpos.y = newrow;
+          addtile = true;
+          break;
+        }
+      }
+    } else {
+      addtile = true;
+    }
+
+    if (addtile) {
+      player.bubble.visible = false;
+
+      level.tiles[gridpos.x][gridpos.y].type = player.bubble.tiletype;
+
+      if (checkGameOver()) {
+        return;
+      }
+
+      cluster = findCluster(gridpos.x, gridpos.y, true, true, false);
+
+      if (cluster.length >= 3) {
+        setGameState(gamestates.removecluster);
+        return;
+      }
+    }
+
+    turncounter++;
+    if (turncounter >= 5) {
+      addBubbles();
+      turncounter = 0;
+      rowoffset = (rowoffset + 1) % 2;
+
+      if (checkGameOver()) {
+        return;
+      }
+    }
+
+    nextBubble();
+    setGameState(gamestates.ready);
+  }
+
+  function checkGameOver() {
+    for (var i = 0; i < level.columns; i++) {
+      if (level.tiles[i][level.rows - 1].type != -1) {
+        nextBubble();
+        setGameState(gamestates.gameover);
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  function addBubbles() {
+    for (var i = 0; i < level.columns; i++) {
+      for (var j = 0; j < level.rows - 1; j++) {
+        level.tiles[i][level.rows - 1 - j].type =
+          level.tiles[i][level.rows - 1 - j - 1].type;
+      }
+    }
+
+    for (var i = 0; i < level.columns; i++) {
+      level.tiles[i][0].type = getExistingColor();
+    }
+  }
+
+  function findColors() {
+    var foundcolors = [];
+    var colortable = [];
+    for (var i = 0; i < bubblecolors; i++) {
+      colortable.push(false);
+    }
+
+    for (var i = 0; i < level.columns; i++) {
+      for (var j = 0; j < level.rows; j++) {
+        var tile = level.tiles[i][j];
+        if (tile.type >= 0) {
+          if (!colortable[tile.type]) {
+            colortable[tile.type] = true;
+            foundcolors.push(tile.type);
+          }
+        }
+      }
+    }
+
+    return foundcolors;
+  }
+
+  function findCluster(tx, ty, matchtype, reset, skipremoved) {
+    if (reset) {
+      resetProcessed();
+    }
+
+    var targettile = level.tiles[tx][ty];
+
+    var toprocess = [targettile];
+    targettile.processed = true;
+    var foundcluster = [];
+
+    while (toprocess.length > 0) {
+      var currenttile = toprocess.pop();
+
+      if (currenttile.type == -1) {
+        continue;
+      }
+
+      if (skipremoved && currenttile.removed) {
+        continue;
+      }
+
+      if (!matchtype || currenttile.type == targettile.type) {
+        foundcluster.push(currenttile);
+
+        var neighbors = getNeighbors(currenttile);
+
+        for (var i = 0; i < neighbors.length; i++) {
+          if (!neighbors[i].processed) {
+            toprocess.push(neighbors[i]);
+            neighbors[i].processed = true;
+          }
+        }
+      }
+    }
+    return foundcluster;
+  }
+
+  function findFloatingClusters() {
+    resetProcessed();
+
+    var foundclusters = [];
+
+    for (var i = 0; i < level.columns; i++) {
+      for (var j = 0; j < level.rows; j++) {
+        var tile = level.tiles[i][j];
+        if (!tile.processed) {
+          var foundcluster = findCluster(i, j, false, false, true);
+
+          if (foundcluster.length <= 0) {
+            continue;
+          }
+
+          var floating = true;
+          for (var k = 0; k < foundcluster.length; k++) {
+            if (foundcluster[k].y == 0) {
+              floating = false;
+              break;
+            }
+          }
+
+          if (floating) {
+            foundclusters.push(foundcluster);
+          }
+        }
+      }
+    }
+
+    return foundclusters;
+  }
+
+  function resetProcessed() {
+    for (var i = 0; i < level.columns; i++) {
+      for (var j = 0; j < level.rows; j++) {
+        level.tiles[i][j].processed = false;
+      }
+    }
+  }
+
+  function resetRemoved() {
+    for (var i = 0; i < level.columns; i++) {
+      for (var j = 0; j < level.rows; j++) {
+        level.tiles[i][j].removed = false;
+      }
+    }
+  }
+
+  function getNeighbors(tile) {
+    var tilerow = (tile.y + rowoffset) % 2; // Even or odd row
+    var neighbors = [];
+
+    var n = neighborsoffsets[tilerow];
+
+    for (var i = 0; i < n.length; i++) {
+      var nx = tile.x + n[i][0];
+      var ny = tile.y + n[i][1];
+
+      if (nx >= 0 && nx < level.columns && ny >= 0 && ny < level.rows) {
+        neighbors.push(level.tiles[nx][ny]);
+      }
+    }
+
+    return neighbors;
+  }
+
+  function drawCenterText(text, x, y, width) {
+    var textdim = context.measureText(text);
+    context.fillText(text, x + (width - textdim.width) / 2, y);
+  }
+
 };
