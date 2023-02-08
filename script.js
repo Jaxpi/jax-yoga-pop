@@ -745,6 +745,152 @@ window.onload = function () {
       level.tileheight
     );
   }
+// NEW GAME
+  function newGame() {
+    score = 0;
+    turncounter = 0;
+    rowoffset = 0;
 
+    setGameState(gamestates.ready);
+
+    createLevel();
+    nextBubble();
+    nextBubble();
+  }
+
+  function createLevel() {
+    for (var j = 0; j < level.rows; j++) {
+      var randomtile = randRange(0, bubblecolors - 1);
+      var count = 0;
+      for (var i = 0; i < level.columns; i++) {
+        if (count >= 2) {
+          var newtile = randRange(0, bubblecolors - 1);
+
+          if (newtile == randomtile) {
+            newtile = (newtile + 1) % bubblecolors;
+          }
+          randomtile = newtile;
+          count = 0;
+        }
+        count++;
+
+        if (j < level.rows / 2) {
+          level.tiles[i][j].type = randomtile;
+        } else {
+          level.tiles[i][j].type = -1;
+        }
+      }
+    }
+  }
+
+  function nextBubble() {
+    player.tiletype = player.nextbubble.tiletype;
+    player.bubble.tiletype = player.nextbubble.tiletype;
+    player.bubble.x = player.x;
+    player.bubble.y = player.y;
+    player.bubble.visible = true;
+
+    var nextcolor = getExistingColor();
+
+    player.nextbubble.tiletype = nextcolor;
+  }
+
+  function getExistingColor() {
+    existingcolors = findColors();
+
+    var bubbletype = 0;
+    if (existingcolors.length > 0) {
+      bubbletype = existingcolors[randRange(0, existingcolors.length - 1)];
+    }
+
+    return bubbletype;
+  }
+
+  function randRange(low, high) {
+    return Math.floor(low + Math.random() * (high - low + 1));
+  }
+
+  function shootBubble() {
+    player.bubble.x = player.x;
+    player.bubble.y = player.y;
+    player.bubble.angle = player.angle;
+    player.bubble.tiletype = player.tiletype;
+
+    setGameState(gamestates.shootbubble);
+  }
+
+  function circleIntersection(x1, y1, r1, x2, y2, r2) {
+    var dx = x1 - x2;
+    var dy = y1 - y2;
+    var len = Math.sqrt(dx * dx + dy * dy);
+
+    if (len < r1 + r2) {
+      return true;
+    }
+
+    return false;
+  }
+
+  function radToDeg(angle) {
+    return angle * (180 / Math.PI);
+  }
+
+  function degToRad(angle) {
+    return angle * (Math.PI / 180);
+  }
+
+  function onMouseMove(e) {
+    var pos = getMousePos(canvas, e);
+
+    var mouseangle = radToDeg(
+      Math.atan2(
+        player.y + level.tileheight / 2 - pos.y,
+        pos.x - (player.x + level.tilewidth / 2)
+      )
+    );
+
+    if (mouseangle < 0) {
+      mouseangle = 180 + (180 + mouseangle);
+    }
+
+    var lbound = 8;
+    var ubound = 172;
+    if (mouseangle > 90 && mouseangle < 270) {
+      if (mouseangle > ubound) {
+        mouseangle = ubound;
+      }
+    } else {
+      if (mouseangle < lbound || mouseangle >= 270) {
+        mouseangle = lbound;
+      }
+    }
+
+    player.angle = mouseangle;
+  }
+
+  function onMouseDown(e) {
+    var pos = getMousePos(canvas, e);
+
+    if (gamestate == gamestates.ready) {
+      shootBubble();
+    } else if (gamestate == gamestates.gameover) {
+      newGame();
+    }
+  }
+
+  function getMousePos(canvas, e) {
+    var rect = canvas.getBoundingClientRect();
+    return {
+      x: Math.round(
+        ((e.clientX - rect.left) / (rect.right - rect.left)) * canvas.width
+      ),
+      y: Math.round(
+        ((e.clientY - rect.top) / (rect.bottom - rect.top)) * canvas.height
+      ),
+    };
+  }
+
+  // CALL TO INITIALIZE
+  init();
 
 };
